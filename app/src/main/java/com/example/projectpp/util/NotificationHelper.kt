@@ -47,7 +47,7 @@ object NotificationHelper {
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.app_logo) // Pastikan icon ini benar
+            .setSmallIcon(R.drawable.app_logo)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -108,7 +108,7 @@ object NotificationHelper {
             val data = Data.Builder()
                 .putString("food_name", food.name)
                 .putInt("food_id", food.id.toInt())
-                .putString("message_body", customMessage) // Kirim pesan kustom
+                .putString("message_body", customMessage)
                 .build()
 
             val notificationWork = OneTimeWorkRequestBuilder<ExpirationWorker>()

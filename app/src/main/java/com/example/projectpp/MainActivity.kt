@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.projectpp.data.FoodItem
 import com.example.projectpp.ui.* import com.example.projectpp.ui.theme.ProjectPPTheme
+import com.example.projectpp.ui.theme.GreenPrimary
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 
@@ -69,6 +70,8 @@ class MainActivity : ComponentActivity() {
             val categoryList = categoriesMap.keys.toList()
             val selectedCategory by vm.selectedCategory.collectAsStateWithLifecycle()
             val isTestMode by vm.isTestMode.collectAsStateWithLifecycle()
+            val searchQuery by vm.searchQuery.collectAsStateWithLifecycle()
+
             val isBackHandlerEnabled = drawerState.isOpen || screen != "home"
 
             BackHandler(enabled = isBackHandlerEnabled) {
@@ -80,7 +83,6 @@ class MainActivity : ComponentActivity() {
                     screen = "home"
                     scope.launch { drawerState.open() }
                 } else {
-                    // PERBAIKAN: Kembali ke home, BUKAN finish()
                     screen = "home"
                 }
             }
@@ -138,6 +140,8 @@ class MainActivity : ComponentActivity() {
                                         "profile" -> "Profil Pengguna"
                                         else -> selectedCategory ?: "Semua"
                                     },
+                                    searchQuery = searchQuery,
+                                    onSearchQueryChange = { vm.onSearchQueryChange(it) },
                                     onMenu = { scope.launch { drawerState.open() } },
                                     onBack = {
                                         if (screen == "profile") {
@@ -208,7 +212,7 @@ class MainActivity : ComponentActivity() {
                                         screen = "profile"
                                     },
                                     onLanguageClick = {
-                                        scope.launch { snackbarHostState.showSnackbar("Navigasi ke Pengaturan Bahasa") }
+                                        scope.launch { snackbarHostState.showSnackbar("Bahasa (Coming Soon)") }
                                     },
                                     isTestMode = isTestMode,
                                     onTestModeChange = { vm.setTestMode(it) }
@@ -296,46 +300,88 @@ fun SplashScreen(onTimeout: () -> Unit) {
     }
 }
 
-/* ====== Top bar ====== */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun TopBar(
     isHome: Boolean,
     title: String,
+    searchQuery: String = "",
+    onSearchQueryChange: (String) -> Unit = {},
     onMenu: () -> Unit,
     onBack: () -> Unit
 ) {
-    TopAppBar(
-        title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        navigationIcon = {
-            if (isHome) {
-                IconButton(onClick = onMenu) {
-                    Icon(Icons.Filled.Menu, contentDescription = "Menu")
+    var isSearchActive by remember { mutableStateOf(false) }
+
+    if (isSearchActive && isHome) {
+        TopAppBar(
+            title = {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    placeholder = { Text("Cari produk...") },
+                    singleLine = true,
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            navigationIcon = {
+                IconButton(onClick = {
+                    isSearchActive = false
+                    onSearchQueryChange("")
+                }) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Tutup Cari")
                 }
-            } else {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Kembali"
-                    )
+            },
+            actions = {
+                if (searchQuery.isNotEmpty()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Text("X", fontWeight = FontWeight.Bold)
+                    }
                 }
-            }
-        },
-        actions = {
-            if (isHome) {
-                IconButton(onClick = { /* search nanti */ }) {
-                    Icon(Icons.Filled.Search, contentDescription = "Cari")
-                }
-            }
-        },
-        colors = topAppBarColors(
-            containerColor = Color.Transparent,
-            scrolledContainerColor = Color.Transparent
+            },
+            colors = topAppBarColors(
+                containerColor = Color.White.copy(alpha = 0.9f),
+                scrolledContainerColor = Color.White.copy(alpha = 0.9f)
+            )
         )
-    )
+    } else {
+        TopAppBar(
+            title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            navigationIcon = {
+                if (isHome) {
+                    IconButton(onClick = onMenu) {
+                        Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                    }
+                } else {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Kembali"
+                        )
+                    }
+                }
+            },
+            actions = {
+                if (isHome) {
+                    IconButton(onClick = { isSearchActive = true }) {
+                        Icon(Icons.Filled.Search, contentDescription = "Cari")
+                    }
+                }
+            },
+            colors = topAppBarColors(
+                containerColor = Color.Transparent,
+                scrolledContainerColor = Color.Transparent
+            )
+        )
+    }
 }
 
-/* ====== Drawer ====== */
 @Composable
 private fun AppDrawer(
     userName: String,
@@ -351,10 +397,10 @@ private fun AppDrawer(
 ) {
     ModalDrawerSheet(
         modifier = Modifier.fillMaxWidth(0.8f),
-        // PERBAIKAN: Ubah warna container jadi Putih, dan konten jadi Hitam
-        drawerContainerColor = Color.White,
-        drawerContentColor = Color.Black
+        drawerContainerColor = Color(0xFF121212),
+        drawerContentColor = Color.White
     ) {
+        // Header Profil
         Row(
             Modifier
                 .fillMaxWidth()
@@ -376,18 +422,28 @@ private fun AppDrawer(
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text(userName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(userDescription, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(userName, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.White)
+                Text(userDescription, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, color = Color.Gray)
             }
         }
 
-        Divider(color = Color.LightGray)
 
+        Divider(color = Color.Gray)
+
+        // Item Filter "Semua"
         NavigationDrawerItem(
             label = { Text("Semua") },
             selected = (selectedCategory == null),
             onClick = onSemuaClicked,
-            icon = { Icon(Icons.Filled.Apps, contentDescription = "Semua") }
+            icon = { Icon(Icons.Filled.Apps, contentDescription = "Semua") },
+            colors = NavigationDrawerItemDefaults.colors(
+                unselectedContainerColor = Color.Transparent,
+                unselectedTextColor = Color.White,
+                unselectedIconColor = Color.White,
+                selectedContainerColor = GreenPrimary, // Hijau saat aktif
+                selectedTextColor = Color.White,
+                selectedIconColor = Color.White
+            )
         )
 
         categories.entries.forEach { (categoryName, count) ->
@@ -400,44 +456,63 @@ private fun AppDrawer(
                 },
                 selected = (selectedCategory == categoryName),
                 onClick = { onCategoryFilterClicked(categoryName) },
-                icon = null
+                icon = null,
+                colors = NavigationDrawerItemDefaults.colors(
+                    unselectedContainerColor = Color.Transparent,
+                    unselectedTextColor = Color.White,
+                    selectedContainerColor = GreenPrimary,
+                    selectedTextColor = Color.White
+                )
             )
         }
 
-        Divider(color = Color.LightGray)
+        Divider(color = Color.Gray)
+
+        // Item Navigasi (Kelola, Pengaturan, Layanan)
+        val itemColors = NavigationDrawerItemDefaults.colors(
+            unselectedContainerColor = Color.Transparent,
+            unselectedTextColor = Color.White,
+            unselectedIconColor = Color.White,
+            selectedContainerColor = Color.Transparent,
+            selectedTextColor = Color.White,
+            selectedIconColor = Color.White
+        )
 
         NavigationDrawerItem(
             label = { Text("Kelola Kategori") },
             selected = false,
             onClick = onKategoriManageClicked,
-            icon = { Icon(Icons.Filled.Category, contentDescription = null) }
+            icon = { Icon(Icons.Filled.Category, contentDescription = null) },
+            colors = itemColors
         )
 
         NavigationDrawerItem(
             label = { Text("Pengaturan") },
             selected = false,
             onClick = onPengaturanClicked,
-            icon = { Icon(Icons.Filled.Settings, contentDescription = null) }
+            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+            colors = itemColors
         )
         NavigationDrawerItem(
             label = { Text("Layanan") },
             selected = false,
             onClick = onLayananClicked,
-            icon = { Icon(Icons.Filled.Settings, contentDescription = null) }
+            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+            colors = itemColors
         )
 
         Spacer(Modifier.height(24.dp))
     }
 }
 
-/* ====== HomeHost ====== */
+// (HomeHost, EmptyState, ActionCard, PlaceholderScreen)
 @Composable
 private fun HomeHost(
     vm: FoodViewModel,
     onAdd: () -> Unit,
     onEdit: (FoodItem) -> Unit
 ) {
-    val uiState by vm.foods.collectAsState(initial = vm.foods.value)
+    val uiState by vm.foods.collectAsStateWithLifecycle()
 
     when (uiState) {
         FoodUiState.Loading -> {
@@ -457,7 +532,6 @@ private fun HomeHost(
     }
 }
 
-/* ====== Empty state card ====== */
 @Composable
 private fun EmptyState(onAdd: () -> Unit) {
     Column(

@@ -23,11 +23,9 @@ interface FoodDao {
     @Query("SELECT * FROM food_table")
     suspend fun getAllNow(): List<FoodItem>
 
-    /** Hanya menghapus item yang merupakan produk nyata (bukan kategori dummy) */
     @Query("DELETE FROM food_table WHERE quantity > 0")
     suspend fun clearAllProducts()
 
-    /** Hanya mengambil item yang merupakan produk nyata */
     @Query("SELECT * FROM food_table WHERE quantity > 0")
     suspend fun getAllRealProductsNow(): List<FoodItem>
 

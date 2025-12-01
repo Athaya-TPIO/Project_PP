@@ -38,7 +38,6 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
     val userDescription: StateFlow<String> = profileRepository.userDescription
         .stateIn(viewModelScope, SharingStarted.Eagerly, "Memuat...")
 
-    // BARU: Baca mode test
     val isTestMode: StateFlow<Boolean> = profileRepository.isTestMode
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
@@ -63,28 +62,51 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory.asStateFlow()
 
+    // --- BARU: State untuk Pencarian ---
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
     fun selectCategory(category: String?) {
         _selectedCategory.value = category
     }
 
+    // --- BARU: Fungsi update search query ---
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
+    // Update 'combine' untuk menyertakan _searchQuery
     val foods: StateFlow<FoodUiState> = combine(
         allItemsFlow,
         ticker,
-        _selectedCategory
-    ) { list, time, categoryFilter ->
+        _selectedCategory,
+        _searchQuery // <-- Tambahkan ini
+    ) { list, time, categoryFilter, query -> // <-- Tambahkan 'query'
         if (list == null) return@combine FoodUiState.Loading
 
+        // 1. Filter item dummy
         val visibleItems = list.filter { it.quantity > 0 }
-        val filteredItems = if (categoryFilter == null) {
+
+        // 2. Filter Kategori
+        val categoryFiltered = if (categoryFilter == null) {
             visibleItems
         } else {
             visibleItems.filter { it.category == categoryFilter }
         }
 
-        if (filteredItems.isEmpty()) {
+        // 3. BARU: Filter Pencarian (Search)
+        val finalItems = if (query.isBlank()) {
+            categoryFiltered
+        } else {
+            categoryFiltered.filter {
+                it.name.contains(query, ignoreCase = true) // Cari berdasarkan nama (tidak case sensitive)
+            }
+        }
+
+        if (finalItems.isEmpty()) {
             FoodUiState.Empty
         } else {
-            val uiItems = filteredItems.map { item ->
+            val uiItems = finalItems.map { item ->
                 val daysLeft = max(
                     ((item.expirationDate - time) / (1000 * 60 * 60 * 24)).toInt(),
                     -999
@@ -122,19 +144,16 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
             emptyMap()
         )
 
-    // PERBAIKAN: Logika Insert dengan Test Mode
     fun insertAndSchedule(food: FoodItem) = viewModelScope.launch {
         val newId = dao.insert(food)
         if (food.quantity > 0) {
             val finalFood = food.copy(id = newId)
-            val isTest = isTestMode.value // Ambil nilai saat ini
+            val isTest = isTestMode.value
 
             if (isTest) {
-                // Mode Test: Jadwalkan 5 detik dari sekarang
-                val triggerTime = System.currentTimeMillis() + 5_000L
+                val triggerTime = System.currentTimeMillis() + 10_000L
                 NotificationHelper.scheduleNotificationTest(getApplication(), finalFood, triggerTime)
             } else {
-                // Mode Normal
                 NotificationHelper.scheduleNotificationUnique(getApplication(), finalFood)
             }
         }
@@ -145,14 +164,13 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
         dao.delete(food)
     }
 
-    // Logika Update dengan Test Mode
     fun updateAndReschedule(food: FoodItem) = viewModelScope.launch {
         NotificationHelper.cancelNotification(getApplication(), food.id)
         dao.update(food)
 
         val isTest = isTestMode.value
         if (isTest) {
-            val triggerTime = System.currentTimeMillis() + 5_000L
+            val triggerTime = System.currentTimeMillis() + 10_000L
             NotificationHelper.scheduleNotificationTest(getApplication(), food, triggerTime)
         } else {
             NotificationHelper.scheduleNotificationUnique(getApplication(), food)
