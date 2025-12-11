@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
 
             val isBackHandlerEnabled = drawerState.isOpen || screen != "home"
 
+            //logika tombol kembali
             BackHandler(enabled = isBackHandlerEnabled) {
                 if (drawerState.isOpen) {
                     scope.launch { drawerState.close() }

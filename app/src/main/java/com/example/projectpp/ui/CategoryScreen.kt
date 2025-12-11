@@ -58,7 +58,7 @@ fun CategoryScreen(
     }
 
     Scaffold(
-        // PERBAIKAN: Set Transparan agar gambar background MainActivity terlihat
+        // Set Transparan agar gambar background MainActivity terlihat
         containerColor = Color.Transparent,
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddCategoryDialog = true }) {
@@ -91,7 +91,7 @@ fun CategoryScreen(
             modifier = Modifier.fillMaxSize()
         ) {
             item {
-                // Header Kategori dengan latar belakang putih sedikit transparan agar tulisan terbaca
+                // Header Kategori
                 Surface(
                     color = Color.White.copy(alpha = 0.9f),
                     shape = MaterialTheme.shapes.medium,
@@ -130,7 +130,7 @@ fun CategoryScreen(
     }
 }
 
-// --- Dialog Helper ---
+// Dialog Helper
 @Composable
 private fun CategoryOptionsDialog(categoryName: String, onDismiss: () -> Unit, onRename: () -> Unit, onDelete: () -> Unit) {
     AlertDialog(

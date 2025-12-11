@@ -62,7 +62,7 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedCategory = MutableStateFlow<String?>(null)
     val selectedCategory: StateFlow<String?> = _selectedCategory.asStateFlow()
 
-    // --- BARU: State untuk Pencarian ---
+    // State untuk Pencarian
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
@@ -70,7 +70,7 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
         _selectedCategory.value = category
     }
 
-    // --- BARU: Fungsi update search query ---
+    // Fungsi update search query
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
     }
@@ -80,8 +80,8 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
         allItemsFlow,
         ticker,
         _selectedCategory,
-        _searchQuery // <-- Tambahkan ini
-    ) { list, time, categoryFilter, query -> // <-- Tambahkan 'query'
+        _searchQuery
+    ) { list, time, categoryFilter, query ->
         if (list == null) return@combine FoodUiState.Loading
 
         // 1. Filter item dummy
@@ -94,12 +94,12 @@ class FoodViewModel(app: Application) : AndroidViewModel(app) {
             visibleItems.filter { it.category == categoryFilter }
         }
 
-        // 3. BARU: Filter Pencarian (Search)
+        // 3. Filter Pencarian (Search)
         val finalItems = if (query.isBlank()) {
             categoryFiltered
         } else {
             categoryFiltered.filter {
-                it.name.contains(query, ignoreCase = true) // Cari berdasarkan nama (tidak case sensitive)
+                it.name.contains(query, ignoreCase = true) // Cari berdasarkan nama
             }
         }
 

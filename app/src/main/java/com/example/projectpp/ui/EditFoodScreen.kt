@@ -261,4 +261,4 @@ fun EditFoodScreen(
     }
 }
 
-// File ini akan menggunakan definisi yang ada di AddFoodScreen.kt
+// File ini menggunakan definisi yang ada di AddFoodScreen.kt

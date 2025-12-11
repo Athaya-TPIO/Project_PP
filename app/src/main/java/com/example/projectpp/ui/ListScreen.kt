@@ -31,7 +31,7 @@ fun ListScreen(
     var itemToDelete by remember { mutableStateOf<FoodItem?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
 
-    // --- Untuk Hapus Item ---
+    // Untuk Hapus Item
     if (itemToDelete != null) {
         val item = itemToDelete!!
         DeleteConfirmationDialog(
@@ -47,7 +47,7 @@ fun ListScreen(
         )
     }
 
-    // --- Untuk Hapus Semua ---
+    // Untuk Hapus Semua
     if (showDeleteAllDialog) {
         DeleteConfirmationDialog(
             title = "Hapus Semua Produk",
@@ -93,7 +93,7 @@ fun ListScreen(
                 val soonList = groups[ExpirationStatus.EXPIRING_SOON] ?: emptyList()
                 val safeList = groups[ExpirationStatus.SAFE] ?: emptyList()
 
-                // --- BAGIAN KADALUWARSA (Merah) ---
+                // BAGIAN KADALUWARSA (Merah)
                 if (expiredList.isNotEmpty()) {
                     stickyHeader {
                         GroupHeader(title = ExpirationStatus.EXPIRED.title)
@@ -108,7 +108,7 @@ fun ListScreen(
                     }
                 }
 
-                // --- BAGIAN AKAN KADALUWARSA (Kuning) ---
+                // BAGIAN AKAN KADALUWARSA (Kuning)
                 if (soonList.isNotEmpty()) {
                     stickyHeader {
                         GroupHeader(title = ExpirationStatus.EXPIRING_SOON.title)
@@ -123,7 +123,7 @@ fun ListScreen(
                     }
                 }
 
-                // --- BAGIAN AMAN (Hijau) ---
+                // BAGIAN AMAN (Hijau)
                 if (safeList.isNotEmpty()) {
                     stickyHeader {
                         GroupHeader(title = ExpirationStatus.SAFE.title)
